@@ -1,9 +1,21 @@
 name: Playwright Tests
 on:
-  push:
-    branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
+  # push:
+  #   branches: [ main, master ]
+  # pull_request:
+  #   branches: [ main, master ]
+  workflow_dispatch:
+    inputs:
+      filter:
+        description: "เลือก filter ที่ต้องการ"
+        required: true
+        default: "all"
+        type: choice
+        options:
+          - all
+          - api
+          - web
+          - mobile
 jobs:
   test:
     timeout-minutes: 60
