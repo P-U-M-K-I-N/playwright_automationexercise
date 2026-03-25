@@ -1,4 +1,5 @@
 name: Playwright Tests
+
 on:
   # push:
   #   branches: [ main, master ]
@@ -6,31 +7,67 @@ on:
   #   branches: [ main, master ]
   workflow_dispatch:
     inputs:
-      filter:
-        description: "เลือก filter ที่ต้องการ"
+      browser:
+        description: "เลือก browser"
         required: true
         default: "all"
         type: choice
         options:
           - all
-          - api
-          - web
-          - mobile
+          - chromium
+          - firefox
+          - webkit
+
+      grep:
+        description: "filter test เช่น @smoke"
+        required: false
+        default: ""
+
+      test_file:
+        description: "รันเฉพาะไฟล์ เช่น tests/login.spec.ts"
+        required: false
+        default: ""
+
 jobs:
   test:
     timeout-minutes: 60
     runs-on: ubuntu-latest
+
     steps:
     - uses: actions/checkout@v4
+
     - uses: actions/setup-node@v4
       with:
         node-version: lts/*
+
     - name: Install dependencies
       run: npm ci
+
     - name: Install Playwright Browsers
       run: npx playwright install --with-deps
+
     - name: Run Playwright tests
-      run: npx playwright test
+      run: |
+        CMD="npx playwright test"
+
+        # ถ้ามี test_file
+        if [ -n "${{ github.event.inputs.test_file }}" ]; then
+          CMD="$CMD ${{ github.event.inputs.test_file }}"
+        fi
+
+        # ถ้า browser != all ค่อยใส่ --project
+        if [ "${{ github.event.inputs.browser }}" != "all" ]; then
+          CMD="$CMD --project=${{ github.event.inputs.browser }}"
+        fi
+
+        # ถ้ามี grep
+        if [ -n "${{ github.event.inputs.grep }}" ]; then
+          CMD="$CMD --grep '${{ github.event.inputs.grep }}'"
+        fi
+
+        echo "Running: $CMD"
+        eval $CMD
+
     - uses: actions/upload-artifact@v4
       if: ${{ !cancelled() }}
       with:
